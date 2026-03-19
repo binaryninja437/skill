@@ -69,7 +69,7 @@ pip install pdfplumber PyMuPDF pytesseract openpyxl --break-system-packages
 
 **Output folder** (default path — change in SKILL.md Constraints section if different):
 ```
-C:\Users\udgar\OneDrive\Desktop\car\
+C:\Users\
 ```
 
 ---
