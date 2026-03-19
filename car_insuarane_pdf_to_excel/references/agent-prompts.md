@@ -11,13 +11,15 @@ without over-specifying execution steps.
 ```
 You are Agent 1 in a car insurance processing pipeline.
 
-GOAL: Read the car insurance PDF from C:\Users\udgar\OneDrive\Desktop\car\ and extract all
-policy fields into a structured JSON file at C:\Users\udgar\OneDrive\Desktop\car\insurance_data.json.
+PDF path:       <PDF_PATH>
+Work directory: <WORK_DIR>
+
+GOAL: Read the car insurance PDF at <PDF_PATH> and extract all policy fields into a structured
+JSON file at <WORK_DIR>/insurance_data.json.
 
 CONSTRAINTS:
 - Never fabricate or guess field values. If a field is absent, use null.
 - Use pdfplumber first; fall back to PyMuPDF, then pytesseract OCR if text extraction returns empty.
-- If multiple PDFs exist in the folder, stop and ask the user which to use.
 - Dates must be stored in ISO 8601 format (YYYY-MM-DD) where possible.
 - Currency amounts must be stored as plain numbers (no symbols, no commas).
 - Any fields not covered by the standard schema go into the "extras" object.
@@ -35,10 +37,9 @@ JSON SCHEMA to follow:
   "extras": {}
 }
 
-DONE WHEN: insurance_data.json exists on disk, is valid JSON, and contains all schema keys
-(with nulls where appropriate). Report how many fields were extracted vs null.
+DONE WHEN: <WORK_DIR>/insurance_data.json exists on disk, is valid JSON, and contains all schema
+keys (with nulls where appropriate). Report how many fields were extracted vs null.
 
-OS: Windows 11. Shell: bash.
 Install libs if needed: pip install pdfplumber PyMuPDF pytesseract --break-system-packages
 ```
 
@@ -49,8 +50,10 @@ Install libs if needed: pip install pdfplumber PyMuPDF pytesseract --break-syste
 ```
 You are Agent 2 in a car insurance processing pipeline.
 
-GOAL: Read C:\Users\udgar\OneDrive\Desktop\car\insurance_data.json and create a formatted
-Excel workbook at C:\Users\udgar\OneDrive\Desktop\car\insurance_data.xlsx.
+Work directory: <WORK_DIR>
+
+GOAL: Read <WORK_DIR>/insurance_data.json and create a formatted Excel workbook at
+<WORK_DIR>/insurance_data.xlsx.
 
 CONSTRAINTS:
 - Use openpyxl only. Do NOT use xlwt, xlrd, or pandas for writing (they are deprecated or wrong tool).
@@ -62,10 +65,9 @@ CONSTRAINTS:
 - Do NOT write the string "null" into any cell — leave blank and apply yellow fill.
 - Auto-fit column widths (cap at 60 chars wide).
 
-DONE WHEN: insurance_data.xlsx exists on disk with both sheets correctly formatted.
+DONE WHEN: <WORK_DIR>/insurance_data.xlsx exists on disk with both sheets correctly formatted.
 Confirm completion and report the file path.
 
-OS: Windows 11. Shell: bash.
 Install if needed: pip install openpyxl --break-system-packages
 ```
 
@@ -76,9 +78,10 @@ Install if needed: pip install openpyxl --break-system-packages
 ```
 You are Agent 3 in a car insurance processing pipeline.
 
-GOAL: Read C:\Users\udgar\OneDrive\Desktop\car\insurance_data.json and produce a professional
-self-contained HTML dashboard at C:\Users\udgar\OneDrive\Desktop\car\dashboard.html.
-After writing the file, open it in the default browser.
+Work directory: <WORK_DIR>
+
+GOAL: Read <WORK_DIR>/insurance_data.json and produce a professional self-contained HTML dashboard
+at <WORK_DIR>/dashboard.html. After writing the file, open it in the default browser.
 
 CONSTRAINTS:
 - Zero external dependencies — no CDN links, no remote fonts, no external scripts.
@@ -99,14 +102,14 @@ CONSTRAINTS:
 - Card hover: slight lift (translateY -3px) + increased shadow.
 - Footer: "Generated from {source_pdf} on {extracted_at}".
 
-TO OPEN the dashboard after writing:
-  start "" "C:\Users\udgar\OneDrive\Desktop\car\dashboard.html"
-  (Run as a background command so it doesn't block.)
+TO OPEN the dashboard after writing, use the correct command for the user's OS (detect at runtime):
+  Windows → subprocess.Popen(["cmd", "/c", "start", "", "<WORK_DIR>/dashboard.html"])
+  macOS   → subprocess.Popen(["open", "<WORK_DIR>/dashboard.html"])
+  Linux   → subprocess.Popen(["xdg-open", "<WORK_DIR>/dashboard.html"])
+  Use Popen (non-blocking) — never block waiting for the browser process.
 
 DONE WHEN: dashboard.html exists, opens in browser, and all sections render correctly.
 Report file path and confirm browser opened.
-
-OS: Windows 11. Shell: bash.
 ```
 
 ---
@@ -115,10 +118,11 @@ OS: Windows 11. Shell: bash.
 
 The orchestrator (main Claude session) must:
 
-1. Verify the car folder exists and exactly one PDF is present (or ask user to choose)
-2. Spawn Agent 1 → wait for confirmation + verify `insurance_data.json` exists on disk
-3. Spawn Agent 2 → wait for confirmation + verify `insurance_data.xlsx` exists on disk
-4. Spawn Agent 3 → wait for confirmation + verify `dashboard.html` exists on disk
-5. Print completion summary: PDF processed, N fields extracted, N nulls, 3 output files listed
+1. Ask the user for their PDF path (or folder). Resolve `WORK_DIR` = parent directory of the PDF.
+2. Confirm the PDF exists and no ambiguity (if multiple PDFs in folder, ask user to choose).
+3. Spawn Agent 1 with `PDF_PATH` and `WORK_DIR` → wait for confirmation + verify `insurance_data.json` on disk.
+4. Spawn Agent 2 with `WORK_DIR` → wait for confirmation + verify `insurance_data.xlsx` on disk.
+5. Spawn Agent 3 with `WORK_DIR` → wait for confirmation + verify `dashboard.html` on disk.
+6. Print completion summary: PDF processed, N fields extracted, N nulls, 3 output file paths listed.
 
 Never proceed to the next agent without confirming the current agent's output file exists.

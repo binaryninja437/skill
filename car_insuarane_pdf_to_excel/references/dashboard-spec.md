@@ -238,6 +238,27 @@ function formatDate(isoStr) {
 
 ---
 
+## Opening the Dashboard (Cross-Platform)
+
+After writing `dashboard.html`, open it without blocking the process:
+
+```python
+import subprocess, sys, os
+
+dashboard_path = os.path.join(work_dir, "dashboard.html")
+
+if sys.platform == "win32":
+    subprocess.Popen(["cmd", "/c", "start", "", dashboard_path])
+elif sys.platform == "darwin":
+    subprocess.Popen(["open", dashboard_path])
+else:
+    subprocess.Popen(["xdg-open", dashboard_path])
+```
+
+Never use `os.system` or a blocking `subprocess.run` — the pipeline must not hang waiting for the browser.
+
+---
+
 ## Full HTML Skeleton
 
 ```html

@@ -90,9 +90,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-CAR_FOLDER = r"C:\Users\udgar\OneDrive\Desktop\car"
-JSON_PATH = f"{CAR_FOLDER}\\insurance_data.json"
-XLSX_PATH = f"{CAR_FOLDER}\\insurance_data.xlsx"
+# WORK_DIR is passed in by the orchestrator at runtime — never hardcode this path.
+# Example: WORK_DIR = "/home/user/insurance" or "C:\\Users\\you\\Documents\\insurance"
+import os
+WORK_DIR = os.environ.get("WORK_DIR", os.getcwd())  # fallback: current directory
+JSON_PATH = os.path.join(WORK_DIR, "insurance_data.json")
+XLSX_PATH = os.path.join(WORK_DIR, "insurance_data.xlsx")
 
 with open(JSON_PATH, "r", encoding="utf-8") as f:
     data = json.load(f)
@@ -162,7 +165,7 @@ ws_raw["A1"].alignment = Alignment(wrap_text=True)
 ws_raw.column_dimensions["A"].width = 120
 
 wb.save(XLSX_PATH)
-print(f"Excel saved to {XLSX_PATH}")
+print(f"Agent 2 complete. Excel saved to: {XLSX_PATH}")
 ```
 
 ---

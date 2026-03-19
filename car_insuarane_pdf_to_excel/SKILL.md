@@ -32,7 +32,7 @@ outputs regardless of PDF format variation.
 - [ ] Agent 1 extracts every meaningful field from the PDF into `insurance_data.json` — no fabrication, no omissions
 - [ ] Agent 2 produces `insurance_data.xlsx` with a formatted Summary sheet and a Raw JSON sheet
 - [ ] Agent 3 produces a fully self-contained `dashboard.html` with status badge, SVG chart, and responsive layout
-- [ ] All three output files land in `C:\Users\udgar\OneDrive\Desktop\car\`
+- [ ] All three output files land in the same folder as the source PDF (`<WORK_DIR>`)
 - [ ] `null` fields are preserved as `null` in JSON, highlighted yellow in Excel, and rendered as `—` in the dashboard
 - [ ] The dashboard opens automatically in the default browser after Agent 3 completes
 - [ ] Each agent confirms completion before the next is spawned
@@ -45,9 +45,9 @@ outputs regardless of PDF format variation.
 - **Never fabricate data** — if a field is absent from the PDF, set it to `null`; do not guess or infer values
 - **Filesystem handoff only** — agents communicate via `insurance_data.json`; no in-memory passing between agents
 - **Self-contained HTML** — the dashboard must have zero external dependencies (no CDN links, no remote fonts)
-- **Car folder is fixed** — all files read from and written to `C:\Users\udgar\OneDrive\Desktop\car\` unless the user explicitly overrides the path
+- **Work directory is dynamic** — always resolve `WORK_DIR` from the user-provided PDF path at runtime; never hardcode any path
 - **One PDF at a time** — if multiple PDFs exist in the folder, ask the user which to process before starting Agent 1
-- **OS: Windows 11, Shell: bash**
+- **Cross-platform** — detect OS at runtime; use `start` (Windows), `open` (macOS), or `xdg-open` (Linux) to open the dashboard
 
 ---
 
@@ -76,9 +76,9 @@ this check causes cascading failures that are hard to diagnose.
 Auto-fit column widths, bold section headers, and freeze row 1 — do not hard-code pixel widths or
 rely on xlwt/xlrd (deprecated).
 
-**Do NOT open the dashboard using a Python `subprocess` or `os.system` call if it's going to
-block** — use `start "" "path"` in bash so the pipeline doesn't hang waiting for the browser
-process.
+**Do NOT open the dashboard with a blocking call.** Use `subprocess.Popen` (non-blocking) with
+the correct OS command: `["cmd", "/c", "start", "", path]` on Windows, `["open", path]` on macOS,
+`["xdg-open", path]` on Linux. Never use `os.system` or a blocking `subprocess.run` for this.
 
 **Do NOT assume the PDF is text-extractable.** Some insurance PDFs are scanned image files. If
 `pdfplumber` / `PyMuPDF` returns empty text, warn the user and attempt OCR (pytesseract) before
@@ -89,10 +89,11 @@ giving up. Do not silently produce an all-null JSON file.
 ## Workflow Guidance
 
 ### Phase 1 — Setup & Validation
-Before spawning any agents, confirm: the car folder exists, exactly one PDF is present (or ask the
-user to choose), and the necessary Python libraries are available (`pdfplumber` or `PyMuPDF`,
-`openpyxl`). Read `references/agent-prompts.md` for the exact sub-agent prompt templates to use
-when spawning via the Task tool.
+Ask the user for their PDF path (or the folder containing it). Resolve `WORK_DIR` as the parent
+directory of the PDF. Confirm the file exists, check for multiple PDFs (ask user to choose if so),
+and verify required Python libraries are available (`pdfplumber` or `PyMuPDF`, `openpyxl`).
+Read `references/agent-prompts.md` for the exact sub-agent prompt templates to use when spawning
+via the Task tool.
 
 ### Phase 2 — Agent 1 (PDF Extraction)
 Spawn Agent 1. Its job is extraction and schema compliance. Read `references/json-schema.md` for
